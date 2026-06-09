@@ -1,0 +1,760 @@
+<!DOCTYPE html>
+<html lang="ko" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>제주특별자치도 인구 통계 인터랙티브 지도</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        jeju: {
+                            50: '#f0f9ff',
+                            100: '#e0f2fe',
+                            500: '#0ea5e9',
+                            900: '#0c4a6e',
+                            darkbg: '#0b1329',
+                            darkcard: '#1c2541'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Chart.js CDN -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Google Fonts -->
+    <link href="https://fonts.googleapis.com/css2?family=Pretendard:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Pretendard', sans-serif;
+            background-color: #0b1329;
+        }
+        /* Custom scrollbar for beautiful dashboard lists */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #1c2541;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #1d4ed8;
+        }
+    </style>
+</head>
+<body class="text-slate-100 min-h-screen flex flex-col antialiased">
+
+    <!-- GNB / Header -->
+    <header class="border-b border-slate-800 bg-jeju-darkbg/80 backdrop-blur-md sticky top-0 z-50 px-4 lg:px-8 py-4">
+        <div class="max-w-7xl mx-auto flex flex-col sm:flex-row justify-between items-center gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-gradient-to-tr from-cyan-500 to-blue-600 rounded-xl shadow-lg shadow-blue-500/20">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 20l-5.447-2.724A1 1 0 013 16.382V5.618a1 1 0 011.447-.894L9 7m0 13l6-3m-6 3V7m6 10l4.553 2.276A1 1 0 0021 18.382V7.618a1 1 0 00-.553-.894L15 4m0 13V4m0 0L9 7" />
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-lg md:text-xl font-extrabold tracking-tight bg-gradient-to-r from-cyan-400 via-blue-400 to-indigo-400 bg-clip-text text-transparent">
+                        제주특별자치도 인구 통계 지도
+                    </h1>
+                    <p class="text-xs text-slate-400 font-medium">Jeju Population Interactive Map & Annual Statistics</p>
+                </div>
+            </div>
+            
+            <!-- Global Stats Banner & Year Control -->
+            <div class="flex flex-wrap items-center gap-4">
+                <div class="bg-slate-800/80 rounded-lg px-3 py-1.5 border border-slate-700/50 flex items-center gap-2">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                    <span class="text-xs text-slate-300 font-medium">총인구: </span>
+                    <span id="total-population-badge" class="text-sm font-bold text-emerald-400">675,120명</span>
+                </div>
+                <div class="flex bg-slate-800 p-1 rounded-lg border border-slate-700">
+                    <button onclick="changeYear(2021)" class="year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200" data-year="2021">2021</button>
+                    <button onclick="changeYear(2022)" class="year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200" data-year="2022">2022</button>
+                    <button onclick="changeYear(2023)" class="year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200" data-year="2023">2023</button>
+                    <button onclick="changeYear(2024)" class="year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200" data-year="2024">2024</button>
+                    <button onclick="changeYear(2025)" class="year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200 active bg-blue-600 text-white" data-year="2025">2025</button>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="flex-grow max-w-7xl w-full mx-auto p-4 lg:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8">
+        
+        <!-- Left Side: Interactive Map & Legend (Col 7) -->
+        <section class="lg:col-span-7 flex flex-col gap-6 bg-slate-900/50 border border-slate-800/80 rounded-2xl p-4 md:p-6 shadow-2xl backdrop-blur-sm">
+            <div class="flex justify-between items-center flex-wrap gap-2">
+                <div>
+                    <h2 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                        <svg class="w-5 h-5 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+                        지역별 인구 밀도 맵
+                    </h2>
+                    <p class="text-xs text-slate-400 mt-1">지역을 마우스로 가리키거나 클릭하여 연도별 변동 및 추이를 확인해보세요.</p>
+                </div>
+                
+                <!-- Simple Dynamic Search Box -->
+                <div class="relative w-44">
+                    <input type="text" id="map-search" oninput="searchRegion()" placeholder="지역명 검색..." class="w-full bg-slate-800 border border-slate-700 rounded-lg py-1.5 pl-8 pr-3 text-xs text-slate-100 focus:outline-none focus:border-blue-500 focus:ring-1 focus:ring-blue-500 transition-all">
+                    <svg class="absolute left-2.5 top-2.5 w-3.5 h-3.5 text-slate-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
+                </div>
+            </div>
+
+            <!-- Map Container -->
+            <div class="relative flex-grow flex items-center justify-center border border-slate-800 bg-slate-950/60 rounded-xl overflow-hidden min-h-[350px] md:min-h-[460px] p-2">
+                
+                <!-- Floating Map Title overlay -->
+                <div class="absolute top-4 left-4 bg-slate-900/90 border border-slate-800 px-3 py-2 rounded-lg text-xs pointer-events-none">
+                    <div class="text-slate-400">선택된 연도</div>
+                    <div class="text-lg font-bold text-blue-400" id="selected-year-display">2025년 통계</div>
+                </div>
+
+                <!-- Map SVG -->
+                <svg id="jeju-svg-map" viewBox="0 0 1000 500" class="w-full h-full max-h-[450px] drop-shadow-[0_10px_15px_rgba(0,0,0,0.5)]">
+                    <!-- Definitions for Map Effects -->
+                    <defs>
+                        <filter id="glow" x="-10%" y="-10%" width="120%" height="120%">
+                            <feGaussianBlur stdDeviation="5" result="blur" />
+                            <feComposite in="SourceGraphic" in2="blur" operator="over" />
+                        </filter>
+                    </defs>
+
+                    <!-- Background / Sea Styling elements if needed -->
+                    <g id="regions" class="cursor-pointer">
+                        <!-- Chuja-myeon (Top-Left Off-island) -->
+                        <path id="chuja" d="M 120,40 L 150,30 L 170,45 L 150,65 L 120,55 Z M 165,60 L 180,50 L 190,60 L 175,70 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Hangyeong-myeon (Far West) -->
+                        <path id="hangyeong" d="M 50,250 L 120,220 L 160,250 L 140,320 L 90,340 L 50,310 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Hallim-eup (North West) -->
+                        <path id="hallim" d="M 120,220 L 210,180 L 250,220 L 220,280 L 160,250 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Aewol-eup (North West-Central) -->
+                        <path id="aewol" d="M 210,180 L 380,120 L 410,210 L 320,260 L 250,220 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Jeju-si Downtown (North Central Urban) -->
+                        <path id="jejusi" d="M 380,120 L 540,110 L 520,220 L 410,210 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[2]" />
+                        
+                        <!-- Jocheon-eup (North East-Central) -->
+                        <path id="jocheon" d="M 540,110 L 680,115 L 640,220 L 520,220 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Gujwa-eup (North East) -->
+                        <path id="gujwa" d="M 680,115 L 830,130 L 820,240 L 640,220 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Udo-myeon (Far East Off-island) -->
+                        <path id="udo" d="M 870,140 L 900,130 L 910,155 L 885,170 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Seongsan-eup (Far East Coast) -->
+                        <path id="seongsan" d="M 820,240 L 890,210 L 910,270 L 830,330 L 780,290 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Pyoseon-myeon (South East Coast) -->
+                        <path id="pyoseon" d="M 780,290 L 830,330 L 760,390 L 690,340 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Namwon-eup (South East-Central) -->
+                        <path id="namwon" d="M 640,220 L 690,340 L 570,380 L 540,250 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Seogwipo-si Downtown (South Central Urban) -->
+                        <path id="seogwiposi" d="M 520,220 L 540,250 L 570,380 L 410,400 L 420,260 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[2]" />
+                        
+                        <!-- Andeok-myeon (South West-Central) -->
+                        <path id="andeok" d="M 320,260 L 420,260 L 410,400 L 290,390 L 280,310 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                        
+                        <!-- Daejeong-eup (South West Coast) -->
+                        <path id="daejeong" d="M 140,320 L 280,310 L 290,390 L 190,440 L 120,400 Z" 
+                              class="region-path transition-all duration-300 stroke-slate-950 stroke-[1.5]" />
+                    </g>
+
+                    <!-- Text Labels Overlay on the Map -->
+                    <g class="pointer-events-none text-[12px] font-bold fill-white/90 stroke-black/40 stroke-[0.5] select-none text-center">
+                        <text x="145" y="85" font-size="10">추자면</text>
+                        <text x="95" y="285">한경면</text>
+                        <text x="180" y="240">한림읍</text>
+                        <text x="310" y="200">애월읍</text>
+                        <text x="460" y="160" font-size="15" fill="#f8fafc" class="stroke-black/60 font-extrabold">제주시 동지역</text>
+                        <text x="600" y="165">조천읍</text>
+                        <text x="730" y="170">구좌읍</text>
+                        <text x="895" y="185" font-size="10">우도면</text>
+                        <text x="840" y="275">성산읍</text>
+                        <text x="755" y="345">표선면</text>
+                        <text x="630" y="305">남원읍</text>
+                        <text x="490" y="325" font-size="14" fill="#f8fafc" class="stroke-black/60 font-extrabold">서귀포시 동지역</text>
+                        <text x="350" y="335">안덕면</text>
+                        <text x="210" y="375">대정읍</text>
+                    </g>
+                </svg>
+
+                <!-- Floating Interactive Tooltip -->
+                <div id="map-tooltip" class="absolute pointer-events-none hidden bg-slate-950/95 border border-slate-700/60 p-3 rounded-lg shadow-2xl text-xs flex flex-col gap-1 backdrop-blur-md transition-opacity duration-150 z-20">
+                    <div class="flex items-center gap-1.5 border-b border-slate-800 pb-1 mb-1">
+                        <span id="tooltip-color-indicator" class="w-2.5 h-2.5 rounded-full bg-blue-500"></span>
+                        <h4 id="tooltip-region-name" class="font-bold text-slate-100">제주시</h4>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-slate-400 font-medium">인구수</span>
+                        <span id="tooltip-population" class="font-extrabold text-blue-400">000,000명</span>
+                    </div>
+                    <div class="flex justify-between gap-4">
+                        <span class="text-slate-400 font-medium">인구 비중</span>
+                        <span id="tooltip-percentage" class="text-slate-300 font-semibold">0%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Choropleth Color Legend -->
+            <div class="mt-2 bg-slate-950/40 border border-slate-800/80 rounded-xl p-4 flex flex-col sm:flex-row justify-between items-center gap-4">
+                <span class="text-xs text-slate-400 font-semibold uppercase tracking-wider">인구 분포 등급</span>
+                <div class="flex items-center gap-1.5 w-full sm:w-auto">
+                    <span class="text-[10px] text-slate-500">인구 낮음</span>
+                    <div class="h-3.5 w-48 sm:w-64 rounded-md bg-gradient-to-r from-teal-500 via-indigo-600 to-rose-500 shadow-inner"></div>
+                    <span class="text-[10px] text-slate-500">인구 높음</span>
+                </div>
+                <div class="text-[11px] text-slate-400">
+                    <span class="text-slate-300 font-bold">●</span> 동지역 집중화 현상 시각화
+                </div>
+            </div>
+        </section>
+
+        <!-- Right Side: Detailed Stats & Line Chart (Col 5) -->
+        <section class="lg:col-span-5 flex flex-col gap-6">
+            
+            <!-- Detailed Region Status Card -->
+            <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-sm flex flex-col gap-4">
+                <div class="flex justify-between items-start border-b border-slate-800 pb-4">
+                    <div>
+                        <span id="selected-city-category" class="text-[10px] uppercase font-bold tracking-widest text-blue-500">제주시 행정구역</span>
+                        <h3 id="selected-region-title" class="text-2xl font-extrabold text-slate-100 mt-0.5">애월읍</h3>
+                        <p id="selected-region-sub" class="text-xs text-slate-400 mt-1">지도를 클릭하여 상세 통계를 로드하십시오.</p>
+                    </div>
+                    <div class="text-right">
+                        <div class="text-[10px] text-slate-400 font-medium">선택 연도 인구</div>
+                        <div id="selected-region-pop-value" class="text-xl font-black text-rose-400 mt-0.5">00,000명</div>
+                        <div id="selected-region-rank" class="text-xs text-slate-500 mt-0.5">전체 4위</div>
+                    </div>
+                </div>
+
+                <!-- Annual Chart Container -->
+                <div>
+                    <h4 class="text-xs font-bold uppercase tracking-wider text-slate-400 mb-3 flex items-center gap-1.5">
+                        <svg class="w-4 h-4 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"/></svg>
+                        최근 5개년 연간 인구 통계 추이 (2021~2025)
+                    </h4>
+                    <div class="relative w-full h-[200px] bg-slate-950/40 rounded-xl p-2 border border-slate-800/60">
+                        <canvas id="annualTrendChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Region Analytics Metrics Grid -->
+                <div class="grid grid-cols-2 gap-3 mt-1">
+                    <div class="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3">
+                        <div class="text-[10px] text-slate-400 font-semibold">5개년 인구 증감</div>
+                        <div id="stat-net-growth" class="text-sm font-bold mt-1 text-emerald-400">+1,452명 (+4.1%)</div>
+                    </div>
+                    <div class="bg-slate-950/40 border border-slate-800/60 rounded-xl p-3">
+                        <div class="text-[10px] text-slate-400 font-semibold">인구 점유율</div>
+                        <div id="stat-island-share" class="text-sm font-bold mt-1 text-slate-300">5.6%</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Jeju Island General Insights & Leaderboard -->
+            <div class="bg-slate-900/50 border border-slate-800/80 rounded-2xl p-6 shadow-2xl backdrop-blur-sm flex flex-col gap-4">
+                <div class="flex justify-between items-center">
+                    <h3 class="text-sm font-extrabold text-slate-200 tracking-wider uppercase flex items-center gap-2">
+                        <svg class="w-4 h-4 text-amber-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+                        지역 인구 순위 (현재 선택년도 기준)
+                    </h3>
+                    <span id="rank-year-lbl" class="text-[10px] text-blue-400 font-bold">2025년 기준</span>
+                </div>
+                
+                <!-- Scrollable leaderboard list -->
+                <div class="max-h-[220px] overflow-y-auto pr-1 flex flex-col gap-2" id="leaderboard-container">
+                    <!-- Dynamic Item -->
+                </div>
+            </div>
+
+        </section>
+
+    </main>
+
+    <!-- Map & Stat Logic Script -->
+    <script>
+        // Population dataset of Jeju Island by year (2021 ~ 2025)
+        // Authentic representative statistics modeling real trends
+        const jejuData = {
+            jejusi: {
+                name: "제주시 동지역",
+                city: "제주시",
+                history: [378500, 381000, 383200, 384500, 385800], // 2021 to 2025
+                desc: "제주도 행정, 금융, 교육의 중심지로 고층 아파트 단지와 인프라가 집중되어 인구 밀집도가 가장 높습니다."
+            },
+            seogwiposi: {
+                name: "서귀포시 동지역",
+                city: "서귀포시",
+                history: [103800, 104500, 105100, 105600, 106200],
+                desc: "아름다운 자연경관과 혁신도시 조성으로 꾸준히 유입이 이어지며, 서귀포 남부 핵심 행정/관광 거점입니다."
+            },
+            aewol: {
+                name: "애월읍",
+                city: "제주시",
+                history: [37200, 37800, 38300, 38900, 39400],
+                desc: "수려한 해안 도로 및 오름들이 산재하여 이주민들이 대거 정착해온 제주의 인구 1순위 읍 지역입니다."
+            },
+            hallim: {
+                name: "한림읍",
+                city: "제주시",
+                history: [24100, 23900, 23700, 23500, 23200],
+                desc: "농수축산업의 중심지이며 협재 해변이 유명한 곳이나 최근 들어 고령화 영향으로 소폭 인구 정체 현상을 보입니다."
+            },
+            jocheon: {
+                name: "조천읍",
+                city: "제주시",
+                history: [25400, 25800, 26000, 26300, 26500],
+                desc: "함덕해수욕장과 곶자왈 지대가 인접해 조용하고 아름다운 거주지로 각광받으며 서서히 정주 인구가 증가하고 있습니다."
+            },
+            gujwa: {
+                name: "구좌읍",
+                city: "제주시",
+                history: [15400, 15300, 15150, 15000, 14850],
+                desc: "당근, 평대리 해양 자원의 중심지로, 귀농/귀촌을 통한 청년층 유입 대책이 다각도로 진행되는 해안 마을입니다."
+            },
+            namwon: {
+                name: "남원읍",
+                city: "서귀포시",
+                history: [19200, 19100, 18950, 18800, 18650],
+                desc: "감귤 최대 생산지로 기후가 매우 따뜻해 겨울 휴양 예술마을 등이 다수 형성되어 있는 조용한 정주 지역입니다."
+            },
+            daejeong: {
+                name: "대정읍",
+                city: "서귀포시",
+                history: [23100, 23600, 23900, 24150, 24400],
+                desc: "영어교육도시가 조성되어 대규모 가구 유입이 활발하며 제주 서남부의 떠오르는 신도시 인구 허브입니다."
+            },
+            seongsan: {
+                name: "성산읍",
+                city: "서귀포시",
+                history: [15500, 15350, 15200, 15100, 14950],
+                desc: "성산일출봉을 보유한 세계적 명소이며 제2공항 계획 호재와 연동되어 부동산 및 지역 거점성이 뛰어난 지역입니다."
+            },
+            pyoseon: {
+                name: "표선면",
+                city: "서귀포시",
+                history: [12400, 12500, 12600, 12550, 12500],
+                desc: "표선해수욕장과 민속촌이 위치하고 있고 IB 교육 특구 지정 등으로 균형감 있는 안정적 인구를 유지하고 있습니다."
+            },
+            andeok: {
+                name: "안덕면",
+                city: "서귀포시",
+                history: [12100, 12250, 12350, 12400, 12500],
+                desc: "산방산, 용머리해안 등이 인접해 예술인과 조용한 삶을 꿈꾸는 이주민들이 많이 머무르는 매력적인 고을입니다."
+            },
+            hangyeong: {
+                name: "한경면",
+                city: "제주시",
+                history: [9300, 9400, 9450, 9500, 9600],
+                desc: "천혜의 일몰 명소 차귀도가 보이는 서단 지역으로 저지문화예술인마을 중심의 특색 있는 예술 이주민들이 늘어납니다."
+            },
+            udo: {
+                name: "우도면",
+                city: "제주시",
+                history: [1730, 1710, 1680, 1650, 1620],
+                desc: "섬 속의 섬으로 뛰어난 관광 특수를 자랑하지만, 실거주 인구는 해안 고령화와 도심 진출로 전반적으로 감소세입니다."
+            },
+            chuja: {
+                name: "추자면",
+                city: "제주시",
+                history: [1680, 1640, 1610, 1580, 1550],
+                desc: "풍요로운 조기 어장과 바다낚시 성지로 유명하나 완벽한 도서 지역 특성상 청장년 유출이 비교적 두드러진 지역입니다."
+            }
+        };
+
+        // Current Interactive App State
+        let currentYear = 2025;
+        let selectedRegionId = 'aewol'; // Default focused
+        let trendChart = null;
+
+        // Years mapping to indices in 'history'
+        const yearIndex = { 2021: 0, 2022: 1, 2023: 2, 2024: 3, 2025: 4 };
+
+        // Helper function: calculate color gradients based on population bounds for Choropleth
+        function getChoroplethColor(population) {
+            // Min-Max Scaling (Chuja: ~1,500 ~ Jeju-si Downtown: ~385,000)
+            // Logarithmic scales feel and look much better for choropleths with steep urban concentration
+            const minLog = Math.log(1500);
+            const maxLog = Math.log(390000);
+            const currentLog = Math.log(population);
+            
+            // Percentage from 0 to 1
+            const ratio = Math.max(0, Math.min(1, (currentLog - minLog) / (maxLog - minLog)));
+
+            // Color spectrum interpolation (Cyan-Teal to Deep Blue-Indigo to Rose-Crimson)
+            if (ratio < 0.3) {
+                // Low population: Cool Teal
+                const localRatio = ratio / 0.3;
+                const r = Math.round(13 + localRatio * (45 - 13));
+                const g = Math.round(148 + localRatio * (85 - 148));
+                const b = Math.round(136 + localRatio * (219 - 136));
+                return `rgb(${r}, ${g}, ${b})`;
+            } else if (ratio < 0.7) {
+                // Mid population: Rich Indigo/Slate
+                const localRatio = (ratio - 0.3) / 0.4;
+                const r = Math.round(45 + localRatio * (79 - 45));
+                const g = Math.round(85 + localRatio * (70 - 85));
+                const b = Math.round(219 + localRatio * (229 - 219));
+                return `rgb(${r}, ${g}, ${b})`;
+            } else {
+                // High population: Hot Rose/Crimson
+                const localRatio = (ratio - 0.7) / 0.3;
+                const r = Math.round(79 + localRatio * (244 - 79));
+                const g = Math.round(70 + localRatio * (63 - 70));
+                const b = Math.round(229 + localRatio * (94 - 229));
+                return `rgb(${r}, ${g}, ${b})`;
+            }
+        }
+
+        // Initialize App
+        window.addEventListener('DOMContentLoaded', () => {
+            renderMapColors();
+            setupMapInteractions();
+            updateDashboard(selectedRegionId);
+            renderLeaderboard();
+            updateOverallTotal();
+        });
+
+        // Compute overall sum for current selection
+        function updateOverallTotal() {
+            let total = 0;
+            const idx = yearIndex[currentYear];
+            Object.values(jejuData).forEach(reg => {
+                total += reg.history[idx];
+            });
+            document.getElementById('total-population-badge').innerText = `${total.toLocaleString()}명`;
+        }
+
+        // Render administrative coloring based on current selection
+        function renderMapColors() {
+            const idx = yearIndex[currentYear];
+            Object.keys(jejuData).forEach(regionId => {
+                const path = document.getElementById(regionId);
+                if (path) {
+                    const pop = jejuData[regionId].history[idx];
+                    const fillColor = getChoroplethColor(pop);
+                    
+                    // Apply fill dynamically
+                    path.setAttribute('fill', fillColor);
+                    
+                    // Default style
+                    if (regionId === selectedRegionId) {
+                        path.classList.add('stroke-amber-400');
+                        path.setAttribute('stroke-width', '4');
+                        path.style.filter = 'url(#glow)';
+                    } else {
+                        path.classList.remove('stroke-amber-400');
+                        path.setAttribute('stroke-width', regionId === 'jejusi' || regionId === 'seogwiposi' ? '2' : '1.5');
+                        path.style.filter = 'none';
+                    }
+                }
+            });
+        }
+
+        // Interactive Map hover, touch, click listeners
+        function setupMapInteractions() {
+            const tooltip = document.getElementById('map-tooltip');
+            const tooltipName = document.getElementById('tooltip-region-name');
+            const tooltipPop = document.getElementById('tooltip-population');
+            const tooltipPct = document.getElementById('tooltip-percentage');
+            const tooltipIndicator = document.getElementById('tooltip-color-indicator');
+
+            // Calculate current total for percentages
+            let grandTotal = 0;
+            Object.values(jejuData).forEach(r => grandTotal += r.history[yearIndex[currentYear]]);
+
+            document.querySelectorAll('.region-path').forEach(path => {
+                const regionId = path.id;
+                const meta = jejuData[regionId];
+
+                // Mouse Hover (Desktop)
+                path.addEventListener('mouseover', (e) => {
+                    const idx = yearIndex[currentYear];
+                    const pop = meta.history[idx];
+                    const percentage = ((pop / grandTotal) * 100).toFixed(1);
+
+                    tooltipName.innerText = meta.name;
+                    tooltipPop.innerText = `${pop.toLocaleString()}명`;
+                    tooltipPct.innerText = `${percentage}%`;
+                    tooltipIndicator.style.backgroundColor = getChoroplethColor(pop);
+
+                    tooltip.classList.remove('hidden');
+                    tooltip.style.opacity = '1';
+
+                    // Highlight effect temporarily
+                    if (regionId !== selectedRegionId) {
+                        path.setAttribute('stroke', '#3b82f6');
+                        path.setAttribute('stroke-width', '3');
+                    }
+                });
+
+                path.addEventListener('mousemove', (e) => {
+                    // Position tooltip relative to current container
+                    const mapContainer = e.currentTarget.ownerSVGElement.parentNode;
+                    const rect = mapContainer.getBoundingClientRect();
+                    const x = e.clientX - rect.left + 15;
+                    const y = e.clientY - rect.top + 15;
+
+                    tooltip.style.left = `${x}px`;
+                    tooltip.style.top = `${y}px`;
+                });
+
+                path.addEventListener('mouseout', () => {
+                    tooltip.classList.add('hidden');
+                    tooltip.style.opacity = '0';
+
+                    // Revert stroke to normal
+                    if (regionId !== selectedRegionId) {
+                        path.setAttribute('stroke', '#020617'); // slate-950
+                        path.setAttribute('stroke-width', regionId === 'jejusi' || regionId === 'seogwiposi' ? '2' : '1.5');
+                    }
+                });
+
+                // Selection trigger (Click/Tap)
+                path.addEventListener('click', () => {
+                    selectRegion(regionId);
+                });
+            });
+        }
+
+        // Handle year-switching logic
+        function changeYear(year) {
+            currentYear = year;
+            
+            // Toggle active styling on buttons
+            document.querySelectorAll('.year-btn').forEach(btn => {
+                if (parseInt(btn.getAttribute('data-year')) === year) {
+                    btn.className = "year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200 active bg-blue-600 text-white";
+                } else {
+                    btn.className = "year-btn px-3 py-1 text-xs font-semibold rounded-md transition-all duration-200 text-slate-400 hover:text-slate-100 hover:bg-slate-800";
+                }
+            });
+
+            document.getElementById('selected-year-display').innerText = `${year}년 통계`;
+            document.getElementById('rank-year-lbl').innerText = `${year}년 기준`;
+
+            renderMapColors();
+            updateOverallTotal();
+            updateDashboard(selectedRegionId);
+            renderLeaderboard();
+        }
+
+        // Region Switcher core function
+        function selectRegion(regionId) {
+            selectedRegionId = regionId;
+            renderMapColors();
+            updateDashboard(regionId);
+        }
+
+        // Update main stats cards + Trend Graph
+        function updateDashboard(regionId) {
+            const meta = jejuData[regionId];
+            const idx = yearIndex[currentYear];
+            const currentPop = meta.history[idx];
+
+            // Render text properties
+            document.getElementById('selected-city-category').innerText = `${meta.city} 행정구역`;
+            document.getElementById('selected-region-title').innerText = meta.name;
+            document.getElementById('selected-region-sub').innerText = meta.desc;
+            document.getElementById('selected-region-pop-value').innerText = `${currentPop.toLocaleString()}명`;
+
+            // Net growth calculation over 5 years (2021 to 2025)
+            const pop21 = meta.history[0];
+            const pop25 = meta.history[4];
+            const diff = pop25 - pop21;
+            const diffPct = ((diff / pop21) * 100).toFixed(1);
+            
+            const growthElement = document.getElementById('stat-net-growth');
+            if (diff >= 0) {
+                growthElement.innerText = `+${diff.toLocaleString()}명 (+${diffPct}%)`;
+                growthElement.className = "text-sm font-bold mt-1 text-emerald-400";
+            } else {
+                growthElement.innerText = `${diff.toLocaleString()}명 (${diffPct}%)`;
+                growthElement.className = "text-sm font-bold mt-1 text-rose-400";
+            }
+
+            // Island Share
+            let grandTotal = 0;
+            Object.values(jejuData).forEach(r => grandTotal += r.history[idx]);
+            const share = ((currentPop / grandTotal) * 100).toFixed(1);
+            document.getElementById('stat-island-share').innerText = `${share}%`;
+
+            // Ranking calculations
+            const sortedRegions = Object.keys(jejuData).sort((a,b) => jejuData[b].history[idx] - jejuData[a].history[idx]);
+            const rank = sortedRegions.indexOf(regionId) + 1;
+            document.getElementById('selected-region-rank').innerText = `전체 ${rank}위`;
+
+            // Draw/Update Chart
+            renderTrendChart(meta);
+        }
+
+        // Dynamic Chart.js construction
+        function renderTrendChart(meta) {
+            const ctx = document.getElementById('annualTrendChart').getContext('2d');
+
+            if (trendChart) {
+                trendChart.destroy();
+            }
+
+            trendChart = new Chart(ctx, {
+                type: 'line',
+                data: {
+                    labels: ['2021년', '2022년', '2023년', '2024년', '2025년'],
+                    datasets: [{
+                        label: `${meta.name} 인구 추이`,
+                        data: meta.history,
+                        borderColor: '#10b981', // emerald-500
+                        borderWidth: 3,
+                        pointBackgroundColor: '#ffffff',
+                        pointBorderColor: '#10b981',
+                        pointBorderWidth: 2,
+                        pointRadius: 4,
+                        pointHoverRadius: 6,
+                        backgroundColor: 'rgba(16, 185, 129, 0.1)',
+                        fill: true,
+                        tension: 0.3
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            display: false
+                        },
+                        tooltip: {
+                            mode: 'index',
+                            intersect: false,
+                            backgroundColor: '#0f172a',
+                            titleColor: '#f1f5f9',
+                            bodyColor: '#34d399',
+                            borderColor: '#334155',
+                            borderWidth: 1,
+                            padding: 10,
+                            callbacks: {
+                                label: function(context) {
+                                    return ` ${context.parsed.y.toLocaleString()}명`;
+                                }
+                            }
+                        }
+                    },
+                    scales: {
+                        y: {
+                            grid: {
+                                color: 'rgba(51, 65, 85, 0.3)'
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 },
+                                callback: function(value) {
+                                    return value >= 10000 ? (value / 10000).toFixed(0) + '만' : value;
+                                }
+                            }
+                        },
+                        x: {
+                            grid: {
+                                display: false
+                            },
+                            ticks: {
+                                color: '#94a3b8',
+                                font: { size: 10 }
+                            }
+                        }
+                    }
+                }
+            });
+        }
+
+        // Leaderboard rendering of current active year
+        function renderLeaderboard() {
+            const container = document.getElementById('leaderboard-container');
+            container.innerHTML = '';
+
+            const idx = yearIndex[currentYear];
+            // Sort keys descending by active year's population
+            const sortedKeys = Object.keys(jejuData).sort((a,b) => {
+                return jejuData[b].history[idx] - jejuData[a].history[idx];
+            });
+
+            sortedKeys.forEach((key, index) => {
+                const item = jejuData[key];
+                const pop = item.history[idx];
+                const rank = index + 1;
+
+                const isSelected = key === selectedRegionId;
+
+                const row = document.createElement('button');
+                row.className = `w-full text-left p-3 rounded-xl flex justify-between items-center transition-all ${
+                    isSelected 
+                        ? 'bg-blue-600/20 border border-blue-500 text-blue-100 shadow-lg shadow-blue-500/5' 
+                        : 'bg-slate-950/40 border border-slate-800/40 hover:bg-slate-850 hover:border-slate-700 text-slate-300'
+                }`;
+                row.onclick = () => selectRegion(key);
+
+                // Highlight rank color for Top 3
+                let rankBadgeColor = 'bg-slate-800 text-slate-400';
+                if (rank === 1) rankBadgeColor = 'bg-amber-500 text-slate-950 font-bold';
+                else if (rank === 2) rankBadgeColor = 'bg-slate-300 text-slate-950 font-bold';
+                else if (rank === 3) rankBadgeColor = 'bg-amber-700 text-white font-bold';
+
+                row.innerHTML = `
+                    <div class="flex items-center gap-3">
+                        <span class="w-5 h-5 rounded-md flex items-center justify-center text-[11px] ${rankBadgeColor}">${rank}</span>
+                        <div>
+                            <span class="font-bold text-xs block ${isSelected ? 'text-blue-400' : 'text-slate-200'}">${item.name}</span>
+                            <span class="text-[10px] text-slate-500">${item.city}</span>
+                        </div>
+                    </div>
+                    <div class="text-right">
+                        <span class="text-xs font-extrabold">${pop.toLocaleString()}명</span>
+                    </div>
+                `;
+
+                container.appendChild(row);
+            });
+        }
+
+        // Search Bar logic
+        function searchRegion() {
+            const query = document.getElementById('map-search').value.toLowerCase().trim();
+            if (!query) return;
+
+            const targetId = Object.keys(jejuData).find(key => {
+                const name = jejuData[key].name.toLowerCase();
+                return name.includes(query);
+            });
+
+            if (targetId) {
+                selectRegion(targetId);
+            }
+        }
+    </script>
+</body>
+</html>
